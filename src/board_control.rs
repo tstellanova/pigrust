@@ -30,7 +30,8 @@ pub const PI_HW_PWM_MAX_FREQ: u32 =  125000000;
 pub const PI_HW_PWM_RANGE: u32 = 1000000;
 
 
-// type CBFuncEx = fn(i32, u32, u32, u32, u32);
+// Used for callbacks from pigpiod to us
+pub type CBFuncEx = extern fn(i32, u32, u32, u32, u32);
 
 #[link(name = "pigpiod_if2")]
 extern  {
@@ -52,15 +53,8 @@ extern  {
   fn get_PWM_frequency(daemon_id: i32, gpio: u32) -> i32;
   fn hardware_PWM(daemon_id: i32, gpio: u32, freq: u32, duty: u32) -> i32; 
 
-
-
   //edge event detection
-
-  // typedef void (*CBFuncEx_t)
-  //  (int pi, unsigned user_gpio, unsigned level, uint32_t tick, void *userdata);
-  // int callback_ex
-  //  (int pi, unsigned user_gpio, unsigned edge, CBFuncEx_t f, void *userdata);
-  //fn callback_ex(daemon_id: i32, gpio: u32, edge: u32, cb_func: CBFuncEx, userdata: u32);
+  fn callback_ex(daemon_id: i32, gpio: u32, edge: u32, cb_func: CBFuncEx, userdata: u32) -> i32;
 }
 
 
@@ -128,19 +122,19 @@ impl BoardController {
     unsafe { gpio_write(self.daemon_id, gpio, value) }
   }
  
-  /*
-  pub fn add_edge_detector(&self, gpio: u32, edge: GpioEdgeDetect ) -> i32 {
+  pub fn add_edge_detector(&self, gpio: u32, edge: GpioEdgeDetect, cb: CBFuncEx ) -> i32 {
+    let raw : *const BoardController = self;
+    let raw = raw as u32;
     unsafe {
-      callback_ex(self.daemon_id, gpio, edge, cb_func: CBFuncEx, userdata: u32)
+      callback_ex(self.daemon_id, gpio, edge as u32, cb, raw)
     }
   }
-  */
 }
+
 
 impl Drop for BoardController {
 
   fn drop(&mut self) {
-    println!("Dropping BoardController...");
     if self.daemon_id >= 0 {
       unsafe { pigpio_stop(self.daemon_id); };
       self.daemon_id= -1;

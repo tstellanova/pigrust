@@ -13,8 +13,15 @@ use std::{thread, time};
 const LED_GPIO_PIN: u32 = 18;
 const BUTT_IN_PIN: u32 = 17;
 
-const PWM_FULL_RANGE: u32 = 100;
+//const PWM_FULL_RANGE: u32 = 100;
 const LED_PWM_FREQ_HZ: u32 = 1000;
+
+
+#[no_mangle]
+pub extern fn cb_fn_ex_hook(daemon_id: i32, gpio: u32, level: u32, tick: u32, userdata: u32 ) {
+  println!("main got callback! with {} {} {} {} {} ", daemon_id, gpio, level, tick, userdata);
+}
+
 
 fn main() {
   let bc = BoardController::new();
@@ -32,9 +39,7 @@ fn main() {
     thread::sleep(half_sec);
   }
 
-  // bc.set_pwm_frequency(LED_GPIO_PIN, LED_PWM_FREQ_HZ);
-  // bc.set_pwm_range(LED_GPIO_PIN, PWM_FULL_RANGE); // Set range to 1000. 1 range = 2 us;
-  // bc.set_pwm_dutycycle(LED_GPIO_PIN, (PWM_FULL_RANGE / 2)  );
+  bc.add_edge_detector(BUTT_IN_PIN, GpioEdgeDetect::RisingEdge, cb_fn_ex_hook);
 
   bc.set_hardware_pwm(LED_GPIO_PIN, LED_PWM_FREQ_HZ, (PI_HW_PWM_RANGE / 2));
 
