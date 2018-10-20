@@ -1,5 +1,7 @@
 #![crate_type = "lib"]
 
+extern crate libc;
+
 pub mod board_control;
 
 #[cfg(test)]
