@@ -128,20 +128,14 @@ impl BoardController {
   pub fn gpio_write(&self, gpio: u32, value: u32) -> i32 {
     unsafe { gpio_write(self.daemon_id, gpio, value) }
   }
- 
-  pub fn add_edge_detector(&self, gpio: u32, edge: GpioEdgeDetect, cb: CBFuncEx ) -> i32 {
-    unsafe {
-      callback_ex(self.daemon_id, gpio, edge as u32, cb, ptr::null_mut())
-    }
-  }
-  
+   
   pub fn add_edge_detector_closure<F>(&self, gpio: u32, edge: GpioEdgeDetect, closure: F ) -> i32 
     where F: FnMut(u32, u32),
           F: 'static
   {
     let box_closure: Box<Box<FnMut(u32, u32) >> = Box::new(Box::new(closure));
     unsafe {
-      callback_ex(self.daemon_id, gpio, edge as u32, cb_fn_trampoline as CBFuncEx, Box::into_raw(box_closure) as *mut _  )
+      callback_ex(self.daemon_id, gpio, edge as u32, cb_fn_trampoline as CBFuncEx, Box::into_raw(box_closure) as *mut _ )
     }
   }
   
