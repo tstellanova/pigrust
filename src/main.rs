@@ -30,8 +30,8 @@ fn main() {
   let bc = BoardController::new();
 
   bc.set_gpio_mode(LED_GPIO_PIN, GpioMode::Output);
-  // GPIO  set up as an input, pulled down, connected to 3V3 on button press
-  bc.set_pull_up_down(BUTT_IN_PIN, GpioPullOption::Down );
+  // GPIO  set up as an input, pulled up, connected to ground on button press
+  bc.set_pull_up_down(BUTT_IN_PIN, GpioPullOption::Up );
 
   let half_sec = time::Duration::from_millis(500);
 
@@ -44,7 +44,7 @@ fn main() {
 
   // TODO remove this once C-style callbacks are removed
   // bc.add_edge_detector(BUTT_IN_PIN, GpioEdgeDetect::RisingEdge, cb_fn_ex_hook);
-  bc.add_edge_detector_closure(BUTT_IN_PIN, GpioEdgeDetect::RisingEdge,
+  bc.add_edge_detector_closure(BUTT_IN_PIN, GpioEdgeDetect::FallingEdge,
       |gpio, level| {
           println!("main closure! with {} {} ", gpio, level);
       }
