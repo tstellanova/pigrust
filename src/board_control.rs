@@ -4,6 +4,11 @@ Copyright (c) 2018 Todd Stellanova
 LICENSE: See LICENSE file
 */
 
+
+use std::mem;
+use std::ptr;
+use libc::{c_void};
+
 /// Used for detecting GPIO input changes 
 pub enum GpioEdgeDetect {
   RisingEdge = 0,
@@ -31,7 +36,9 @@ pub const PI_HW_PWM_RANGE: u32 = 1000000;
 
 
 // Used for callbacks from pigpiod to us
-pub type CBFuncEx = extern fn(i32, u32, u32, u32, u32);
+pub type CBFuncEx = extern fn(i32, u32, u32, u32, *mut c_void);
+pub type TriggerClosure = FnMut(u32, u32);
+
 
 #[link(name = "pigpiod_if2")]
 extern  {
@@ -54,7 +61,7 @@ extern  {
   fn hardware_PWM(daemon_id: i32, gpio: u32, freq: u32, duty: u32) -> i32; 
 
   //edge event detection
-  fn callback_ex(daemon_id: i32, gpio: u32, edge: u32, cb_func: CBFuncEx, userdata: u32) -> i32;
+  fn callback_ex(daemon_id: i32, gpio: u32, edge: u32, cb_func: CBFuncEx, userdata: *mut c_void) -> i32;
 }
 
 
@@ -123,12 +130,28 @@ impl BoardController {
   }
  
   pub fn add_edge_detector(&self, gpio: u32, edge: GpioEdgeDetect, cb: CBFuncEx ) -> i32 {
-    let raw : *const BoardController = self;
-    let raw = raw as u32;
     unsafe {
-      callback_ex(self.daemon_id, gpio, edge as u32, cb, raw)
+      callback_ex(self.daemon_id, gpio, edge as u32, cb, ptr::null_mut())
     }
   }
+  
+  pub fn add_edge_detector_closure<F>(&self, gpio: u32, edge: GpioEdgeDetect, closure: F ) -> i32 
+    where F: FnMut(u32, u32),
+          F: 'static
+  {
+    let box_closure: Box<Box<FnMut(u32, u32) >> = Box::new(Box::new(closure));
+    unsafe {
+      callback_ex(self.daemon_id, gpio, edge as u32, cb_fn_trampoline as CBFuncEx, Box::into_raw(box_closure) as *mut _  )
+    }
+  }
+  
+}
+
+#[no_mangle]
+pub extern fn cb_fn_trampoline(_daemon_id: i32, gpio: u32, level: u32, _tick: u32, userdata: *mut c_void ) {
+  // println!("trampoline cb with {} {} {} {} {} ", daemon_id, gpio, level, tick, userdata);
+  let closure: &mut Box<TriggerClosure> = unsafe { mem::transmute(userdata) };
+  closure(gpio, level);
 }
 
 

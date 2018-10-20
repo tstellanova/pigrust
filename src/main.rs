@@ -5,21 +5,24 @@ LICENSE: See LICENSE file
 */
 
 extern crate pigrust;
+extern crate libc;
+
 use pigrust::board_control::*;
 
 use std::{thread, time};
+use libc::{c_void};
 
 // the pins where the power LED and switch are attached
-const LED_GPIO_PIN: u32 = 18;
-const BUTT_IN_PIN: u32 = 17;
+const LED_GPIO_PIN: u32 = 23;
+const BUTT_IN_PIN: u32 = 3;
 
 //const PWM_FULL_RANGE: u32 = 100;
 const LED_PWM_FREQ_HZ: u32 = 1000;
 
 
 #[no_mangle]
-pub extern fn cb_fn_ex_hook(daemon_id: i32, gpio: u32, level: u32, tick: u32, userdata: u32 ) {
-  println!("main got callback! with {} {} {} {} {} ", daemon_id, gpio, level, tick, userdata);
+pub extern fn cb_fn_ex_hook(daemon_id: i32, gpio: u32, level: u32, tick: u32, _userdata: *mut c_void ) {
+  println!("main got callback! with {} {} {} {} ", daemon_id, gpio, level, tick);
 }
 
 
@@ -41,7 +44,7 @@ fn main() {
 
   bc.add_edge_detector(BUTT_IN_PIN, GpioEdgeDetect::RisingEdge, cb_fn_ex_hook);
 
-  bc.set_hardware_pwm(LED_GPIO_PIN, LED_PWM_FREQ_HZ, (PI_HW_PWM_RANGE / 2));
+  bc.set_hardware_pwm(LED_GPIO_PIN, LED_PWM_FREQ_HZ, PI_HW_PWM_RANGE / 2 );
 
   loop {
     //loop forever with PWM active
