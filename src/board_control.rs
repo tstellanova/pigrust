@@ -52,6 +52,7 @@ extern  {
   fn set_pull_up_down(daemon_id: i32, gpio: u32, pud: u32) -> i32;
   fn gpio_read(daemon_id: i32, gpio: u32) -> i32;
   fn gpio_write(daemon_id: i32, gpio: u32, level: u32) -> i32;
+  fn set_pad_strength(daemon_id: i32, pad: u32, strength: u32) -> i32;
 
   // PWM
   fn set_PWM_dutycycle(daemon_id: i32, gpio: u32, duty: u32) -> i32;
@@ -99,6 +100,10 @@ impl BoardController {
 
   pub fn set_pull_up_down(&self, gpio: u32, pud: GpioPullOption) -> i32 {
     unsafe { set_pull_up_down(self.daemon_id, gpio, pud as u32) }
+  }
+
+  pub fn set_gpio_group_strength(&self, group: u32, strength: u32) -> i32 {
+    unsafe { set_pad_strength(self.daemon_id, group, strength) } 
   }
 
   pub fn set_pwm_frequency(&self, gpio: u32, freq: u32) -> i32 {
